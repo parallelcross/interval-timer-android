@@ -9,6 +9,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.intervaltimer.app.data.SettingsRepository
 import com.intervaltimer.app.ui.screens.ActiveTimerScreen
+import com.intervaltimer.app.ui.screens.CompletionScreen
 import com.intervaltimer.app.ui.screens.SettingsScreen
 import com.intervaltimer.app.ui.screens.SetupScreen
 import com.intervaltimer.app.viewmodel.TimerViewModel
@@ -37,7 +38,19 @@ fun AppNavGraph() {
         composable("active") {
             ActiveTimerScreen(
                 viewModel = viewModel,
-                onFinished = {
+                onStopped = {
+                    navController.popBackStack("setup", inclusive = false)
+                },
+                onCompleted = {
+                    navController.navigate("completion") {
+                        popUpTo("setup") { inclusive = false }
+                    }
+                },
+            )
+        }
+        composable("completion") {
+            CompletionScreen(
+                onDone = {
                     navController.popBackStack("setup", inclusive = false)
                 },
             )

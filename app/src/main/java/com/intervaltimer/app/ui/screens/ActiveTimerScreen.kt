@@ -67,7 +67,8 @@ import java.util.Locale
 @Composable
 fun ActiveTimerScreen(
     viewModel: TimerViewModel,
-    onFinished: () -> Unit,
+    onStopped: () -> Unit,
+    onCompleted: () -> Unit,
 ) {
     val state by viewModel.state.collectAsState()
 
@@ -143,12 +144,12 @@ fun ActiveTimerScreen(
 
     BackHandler {
         viewModel.stopWorkout()
-        onFinished()
+        onStopped()
     }
 
     LaunchedEffect(state.isFinished) {
         if (state.isFinished) {
-            onFinished()
+            onCompleted()
         }
     }
 
@@ -186,7 +187,7 @@ fun ActiveTimerScreen(
                 IconButton(
                     onClick = {
                         viewModel.stopWorkout()
-                        onFinished()
+                        onStopped()
                     },
                     modifier = Modifier
                         .size(40.dp)
