@@ -9,6 +9,6 @@
     <style name="Theme.IntervalTimer.Splash" parent="Theme.IntervalTimer">
         <item name="android:windowBackground">@android:color/white</item>
         <item name="android:windowSplashScreenBackground">@android:color/white</item>
-        <item name="android:windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">@android:color/white</item>
     </style>
 </resources>
