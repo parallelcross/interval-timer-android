@@ -63,4 +63,4 @@ No external dependencies beyond AndroidX/Compose — keeps the app lightweight a
 
 ## License
 
-Private repository.
+[MIT License](LICENSE)
