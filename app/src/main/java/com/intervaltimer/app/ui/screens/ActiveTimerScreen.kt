@@ -56,6 +56,7 @@ import com.intervaltimer.app.ui.theme.RestBlue
 import com.intervaltimer.app.ui.theme.RestBlueDark
 import com.intervaltimer.app.ui.theme.WorkGreen
 import com.intervaltimer.app.ui.theme.WorkGreenDark
+import com.intervaltimer.app.service.TimerService
 import com.intervaltimer.app.viewmodel.SpeechEvent
 import com.intervaltimer.app.viewmodel.TimerPhase
 import com.intervaltimer.app.viewmodel.TimerViewModel
@@ -72,8 +73,22 @@ fun ActiveTimerScreen(
 ) {
     val state by viewModel.state.collectAsState()
 
-    // Audio focus + text-to-speech for voice announcements
     val context = LocalContext.current
+
+    // Start foreground service to keep timer alive
+    LaunchedEffect(Unit) {
+        TimerService.start(context)
+    }
+    // Stop service when leaving this screen
+    DisposableEffect(Unit) {
+        onDispose {
+            if (!viewModel.state.value.isRunning && !viewModel.state.value.isPaused) {
+                TimerService.stop(context)
+            }
+        }
+    }
+
+    // Audio focus + text-to-speech for voice announcements
     val audioManager = remember { context.getSystemService(AudioManager::class.java) }
     val focusRequest = remember {
         AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
@@ -144,11 +159,13 @@ fun ActiveTimerScreen(
 
     BackHandler {
         viewModel.stopWorkout()
+        TimerService.stop(context)
         onStopped()
     }
 
     LaunchedEffect(state.isFinished) {
         if (state.isFinished) {
+            TimerService.stop(context)
             onCompleted()
         }
     }
@@ -187,6 +204,7 @@ fun ActiveTimerScreen(
                 IconButton(
                     onClick = {
                         viewModel.stopWorkout()
+                        TimerService.stop(context)
                         onStopped()
                     },
                     modifier = Modifier
