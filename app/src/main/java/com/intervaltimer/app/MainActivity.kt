@@ -9,6 +9,7 @@ import com.intervaltimer.app.ui.theme.IntervalTimerTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        setTheme(R.style.Theme_IntervalTimer)
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
