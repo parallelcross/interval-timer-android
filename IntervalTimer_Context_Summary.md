@@ -1,13 +1,14 @@
 # Interval Timer - Context Summary
 
 ## What is this?
-A minimal Android interval timer app for workouts. Designed for visual-only cues so it doesn't interrupt audio playback. The user configures sets, work duration, and rest duration, then runs a full-screen color-coded timer.
+An Android interval timer app for workouts with spoken voice coaching. The user configures sets, work duration, and rest duration, then runs a full-screen color-coded timer that announces phase changes and counts down aloud. Designed to duck music volume during announcements.
 
 ## Tech Stack
 - **Language:** Kotlin 2.3.10
 - **UI:** Jetpack Compose (BOM 2026.02.01)
 - **Build:** AGP 9.0.1, Gradle 9.3.1
 - **Architecture:** Single-Activity, ViewModel + StateFlow, Navigation Compose
+- **Audio:** Android TextToSpeech + AudioFocusRequest (AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
 - **Min SDK:** 26 | **Target SDK:** 36
 - **Package:** `com.intervaltimer.app`
 
@@ -23,27 +24,31 @@ app/src/main/java/com/intervaltimer/app/
 │   │   └── Theme.kt             # Dark Material3 theme
 │   └── screens/
 │       ├── SetupScreen.kt       # Configure sets, work/rest durations
-│       └── ActiveTimerScreen.kt # Full-screen countdown with color phases
+│       └── ActiveTimerScreen.kt # Full-screen countdown with TTS + audio focus
 └── viewmodel/
-    └── TimerViewModel.kt        # Timer logic, phase management, state
+    └── TimerViewModel.kt        # Timer logic, phase management, speech events
 ```
 
 ## Screens
 1. **Setup Screen** - Dark themed config screen with +/- controls for sets (1-99), work time (5s-60min), rest time (5s-60min). Toggle to skip last rest period. Start button shows total workout duration.
-2. **Active Timer Screen** - Full-screen color-coded display. Green background for work, blue for rest. Shows current set, phase, large countdown, total remaining time. Pause/resume, skip forward/back controls.
+2. **Active Timer Screen** - Full-screen color-coded display. Green background for work, blue for rest. Shows current set, phase, large countdown, total remaining time. Pause/resume, skip forward/back controls. Spoken announcements with audio focus ducking.
 
 ## Key Design Decisions
-- **Visual-only cues** — no sounds or vibrations, so it won't interrupt music/podcasts
-- **Full-screen color changes** — green (work) / blue (rest) are immediately noticeable at a glance
+- **Voice announcements** — TTS speaks "Starting work, Set X of Y", "Starting rest", countdown from 10, "Workout complete"
+- **Audio focus ducking** — requests AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK before each utterance, abandons on completion, so music volume dips during speech
+- **SpeechEvent flow** — ViewModel emits sealed class SpeechEvent via SharedFlow, UI layer collects and plays via TTS (keeps ViewModel testable)
+- **Full-screen color changes** — green (work) / blue (rest) with animated transitions
 - **Dark theme setup** — easy on the eyes, consistent with gym/workout context
 - **No dependency injection** — simple app doesn't need Hilt, uses Compose `viewModel()`
 - **Shared ViewModel** — single ViewModel instance shared between setup and active screens via NavGraph-scoped creation
+- **Edge-to-edge** — uses navigationBarsPadding() on both screens to keep controls above system nav bar
 
 ## What was done last (2026-03-15)
 - Initial project creation with full setup and active timer screens
-- ViewModel with timer logic, phase management, skip forward/back
-- Dark theme with green (work) and blue (rest) color coding
-- Animated color transitions between work and rest phases
-- Skip last rest toggle
-- Total remaining time display
-- Adaptive launcher icon
+- Replaced tone beeps with TextToSpeech voice announcements
+- Added AudioFocusRequest to duck music during speech
+- Spoken countdown from 10 for each phase, phase start/end announcements
+- Fixed navigation bar overlap on both setup and active timer screens
+- Fixed +/- button alignment padding in counter cards
+- Replaced placeholder vector icons with designed PNG launcher icons
+- Updated README with voice/audio focus documentation

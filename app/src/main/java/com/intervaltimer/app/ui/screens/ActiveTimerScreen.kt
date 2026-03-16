@@ -1,6 +1,10 @@
 package com.intervaltimer.app.ui.screens
 
+import android.media.AudioAttributes
+import android.media.AudioFocusRequest
+import android.media.AudioManager
 import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
@@ -61,14 +65,37 @@ fun ActiveTimerScreen(
 ) {
     val state by viewModel.state.collectAsState()
 
-    // Text-to-speech for voice announcements
+    // Audio focus + text-to-speech for voice announcements
     val context = LocalContext.current
+    val audioManager = remember { context.getSystemService(AudioManager::class.java) }
+    val focusRequest = remember {
+        AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
+            .setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_ASSISTANT)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .build()
+            )
+            .build()
+    }
     var ttsReady by remember { mutableStateOf(false) }
     val tts = remember {
         var instance: TextToSpeech? = null
         instance = TextToSpeech(context) { status ->
             if (status == TextToSpeech.SUCCESS) {
                 instance?.language = Locale.US
+                instance?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                    override fun onStart(utteranceId: String?) {
+                        audioManager.requestAudioFocus(focusRequest)
+                    }
+                    override fun onDone(utteranceId: String?) {
+                        audioManager.abandonAudioFocusRequest(focusRequest)
+                    }
+                    @Deprecated("Deprecated in Java")
+                    override fun onError(utteranceId: String?) {
+                        audioManager.abandonAudioFocusRequest(focusRequest)
+                    }
+                })
                 ttsReady = true
             }
         }
@@ -78,6 +105,7 @@ fun ActiveTimerScreen(
         onDispose {
             tts.stop()
             tts.shutdown()
+            audioManager.abandonAudioFocusRequest(focusRequest)
         }
     }
     LaunchedEffect(ttsReady) {

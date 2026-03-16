@@ -1,11 +1,13 @@
 # Interval Timer
 
-A clean, distraction-free interval timer for Android workouts. Built with Jetpack Compose and designed to provide visual cues without interrupting your music.
+A clean workout interval timer for Android with spoken voice coaching. Built with Jetpack Compose, it announces phase changes and counts down aloud so you can stay focused on your workout while listening to music.
 
 ## Features
 
 - **Configurable workouts** — Set number of rounds, work duration, and rest duration
-- **Visual-only feedback** — Full-screen color changes (green for work, blue for rest) so your audio keeps playing uninterrupted
+- **Voice announcements** — Speaks "Starting work, Set 1 of 8", "Starting rest", and counts down the last 10 seconds of each phase aloud
+- **Audio focus** — Automatically ducks your music volume during announcements, then restores it
+- **Visual feedback** — Full-screen color changes (green for work, blue for rest) with animated transitions
 - **Smart controls** — Skip forward/back between intervals, pause/resume anytime
 - **Skip last rest** — Toggle to end your workout immediately after the final work set
 - **Total time display** — See total workout duration before starting and remaining time while running
@@ -26,6 +28,7 @@ Full-screen countdown with:
 - Total remaining time
 - Pause, skip forward, and skip back controls
 - Animated color transitions between phases
+- Spoken countdown and phase announcements
 
 ## Tech Stack
 
@@ -51,8 +54,10 @@ Open in Android Studio or build from command line:
 Single-activity app using Navigation Compose with a shared ViewModel:
 
 - `SetupScreen` — Workout configuration
-- `ActiveTimerScreen` — Full-screen countdown timer
-- `TimerViewModel` — Timer state management with coroutine-based countdown
+- `ActiveTimerScreen` — Full-screen countdown timer with TTS and audio focus management
+- `TimerViewModel` — Timer state management with coroutine-based countdown, emits speech events
+
+Uses Android `TextToSpeech` for voice announcements and `AudioFocusRequest` with `AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK` to temporarily lower music volume during speech.
 
 No external dependencies beyond AndroidX/Compose — keeps the app lightweight and fast.
 
