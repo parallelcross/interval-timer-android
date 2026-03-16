@@ -1,5 +1,7 @@
 package com.intervaltimer.app.ui.screens
 
+import android.media.AudioManager
+import android.media.ToneGenerator
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
@@ -24,9 +26,11 @@ import androidx.compose.material.icons.filled.FastRewind
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -42,8 +46,10 @@ import com.intervaltimer.app.ui.theme.RestBlue
 import com.intervaltimer.app.ui.theme.RestBlueDark
 import com.intervaltimer.app.ui.theme.WorkGreen
 import com.intervaltimer.app.ui.theme.WorkGreenDark
+import com.intervaltimer.app.viewmodel.SoundEvent
 import com.intervaltimer.app.viewmodel.TimerPhase
 import com.intervaltimer.app.viewmodel.TimerViewModel
+import kotlinx.coroutines.delay
 
 @Composable
 fun ActiveTimerScreen(
@@ -51,6 +57,40 @@ fun ActiveTimerScreen(
     onFinished: () -> Unit,
 ) {
     val state by viewModel.state.collectAsState()
+
+    // Sound playback via ToneGenerator on STREAM_MUSIC so it mixes with audio
+    val toneGenerator = remember {
+        ToneGenerator(AudioManager.STREAM_MUSIC, 100)
+    }
+    DisposableEffect(Unit) {
+        onDispose { toneGenerator.release() }
+    }
+    LaunchedEffect(Unit) {
+        viewModel.soundEvents.collect { event ->
+            when (event) {
+                SoundEvent.COUNTDOWN_TICK -> {
+                    toneGenerator.startTone(ToneGenerator.TONE_PROP_BEEP, 150)
+                }
+                SoundEvent.PHASE_WORK -> {
+                    // Double beep for work
+                    toneGenerator.startTone(ToneGenerator.TONE_PROP_BEEP2, 200)
+                    delay(250)
+                    toneGenerator.startTone(ToneGenerator.TONE_PROP_BEEP2, 200)
+                }
+                SoundEvent.PHASE_REST -> {
+                    // Single lower tone for rest
+                    toneGenerator.startTone(ToneGenerator.TONE_SUP_ERROR, 400)
+                }
+                SoundEvent.WORKOUT_COMPLETE -> {
+                    // Triple beep for completion
+                    repeat(3) {
+                        toneGenerator.startTone(ToneGenerator.TONE_PROP_ACK, 200)
+                        delay(300)
+                    }
+                }
+            }
+        }
+    }
 
     BackHandler {
         viewModel.stopWorkout()
