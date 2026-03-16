@@ -96,14 +96,14 @@ fun CompletionScreen(
 
             pieces.forEach { piece ->
                 val t = ((progress.value - piece.delay) / (1f - piece.delay)).coerceIn(0f, 1f)
-                val yPos = -piece.size + t * (h + piece.size * 2) * piece.speed
-                val xPos = piece.x * w + kotlin.math.sin(t * 6.28 * 2) * piece.wobble
+                val yPos = -piece.size + t * (h + piece.size * 2f) * piece.speed
+                val xPos = piece.x * w + (kotlin.math.sin((t * 6.28 * 2).toDouble()) * piece.wobble).toFloat()
                 val rot = piece.rotation + t * piece.rotationSpeed
 
                 rotate(degrees = rot, pivot = Offset(xPos, yPos)) {
                     drawRect(
                         color = piece.color,
-                        topLeft = Offset(xPos - piece.size / 2, yPos - piece.size / 2),
+                        topLeft = Offset(xPos - piece.size / 2f, yPos - piece.size / 2f),
                         size = Size(piece.size, piece.size * 0.6f),
                     )
                 }
