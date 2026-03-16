@@ -36,6 +36,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.setValue
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -56,6 +58,9 @@ import com.intervaltimer.app.ui.theme.WorkGreenDark
 import com.intervaltimer.app.viewmodel.SpeechEvent
 import com.intervaltimer.app.viewmodel.TimerPhase
 import com.intervaltimer.app.viewmodel.TimerViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.util.Locale
 
 @Composable
@@ -78,6 +83,8 @@ fun ActiveTimerScreen(
             )
             .build()
     }
+    val coroutineScope = rememberCoroutineScope()
+    var focusReleaseJob by remember { mutableStateOf<Job?>(null) }
     var ttsReady by remember { mutableStateOf(false) }
     val tts = remember {
         var instance: TextToSpeech? = null
@@ -86,14 +93,25 @@ fun ActiveTimerScreen(
                 instance?.language = Locale.US
                 instance?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                     override fun onStart(utteranceId: String?) {
+                        focusReleaseJob?.cancel()
                         audioManager.requestAudioFocus(focusRequest)
                     }
                     override fun onDone(utteranceId: String?) {
-                        audioManager.abandonAudioFocusRequest(focusRequest)
+                        // Delay releasing focus so back-to-back utterances
+                        // (countdown numbers) don't cause music to unduck/reduck
+                        focusReleaseJob?.cancel()
+                        focusReleaseJob = coroutineScope.launch {
+                            delay(1500L)
+                            audioManager.abandonAudioFocusRequest(focusRequest)
+                        }
                     }
                     @Deprecated("Deprecated in Java")
                     override fun onError(utteranceId: String?) {
-                        audioManager.abandonAudioFocusRequest(focusRequest)
+                        focusReleaseJob?.cancel()
+                        focusReleaseJob = coroutineScope.launch {
+                            delay(1500L)
+                            audioManager.abandonAudioFocusRequest(focusRequest)
+                        }
                     }
                 })
                 ttsReady = true
