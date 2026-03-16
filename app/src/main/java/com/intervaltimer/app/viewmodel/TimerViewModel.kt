@@ -70,7 +70,11 @@ class TimerViewModel : ViewModel() {
 
     private var timerJob: Job? = null
 
-    private var countdownFrom = 3
+    var countdownFrom = 3
+
+    fun setCountdownSeconds(seconds: Int) {
+        countdownFrom = seconds
+    }
 
     fun updateSets(delta: Int) {
         _state.value = _state.value.let {
