@@ -3,6 +3,7 @@ package com.intervaltimer.app.ui.screens
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
+import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import androidx.activity.compose.BackHandler
@@ -131,7 +132,10 @@ fun ActiveTimerScreen(
         viewModel.speechEvents.collect { event ->
             when (event) {
                 is SpeechEvent.Speak -> {
-                    tts.speak(event.text, TextToSpeech.QUEUE_ADD, null, event.text.hashCode().toString())
+                    val params = Bundle().apply {
+                        putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, 0.5f)
+                    }
+                    tts.speak(event.text, TextToSpeech.QUEUE_ADD, params, event.text.hashCode().toString())
                 }
             }
         }
