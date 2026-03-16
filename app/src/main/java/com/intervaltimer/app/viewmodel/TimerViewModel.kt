@@ -14,11 +14,8 @@ import kotlinx.coroutines.launch
 
 enum class TimerPhase { WORK, REST }
 
-enum class SoundEvent {
-    COUNTDOWN_TICK,   // Short beep for last 3 seconds
-    PHASE_WORK,       // Work phase starting
-    PHASE_REST,       // Rest phase starting
-    WORKOUT_COMPLETE, // Workout finished
+sealed class SpeechEvent {
+    data class Speak(val text: String) : SpeechEvent()
 }
 
 data class TimerState(
@@ -68,10 +65,12 @@ class TimerViewModel : ViewModel() {
     private val _state = MutableStateFlow(TimerState())
     val state: StateFlow<TimerState> = _state.asStateFlow()
 
-    private val _soundEvents = MutableSharedFlow<SoundEvent>(extraBufferCapacity = 5)
-    val soundEvents: SharedFlow<SoundEvent> = _soundEvents.asSharedFlow()
+    private val _speechEvents = MutableSharedFlow<SpeechEvent>(extraBufferCapacity = 10)
+    val speechEvents: SharedFlow<SpeechEvent> = _speechEvents.asSharedFlow()
 
     private var timerJob: Job? = null
+
+    private val countdownFrom = 10
 
     fun updateSets(delta: Int) {
         _state.value = _state.value.let {
@@ -104,7 +103,7 @@ class TimerViewModel : ViewModel() {
             remainingSeconds = _state.value.workSeconds,
             isFinished = false,
         )
-        _soundEvents.tryEmit(SoundEvent.PHASE_WORK)
+        speak("Starting work. Set 1 of ${_state.value.sets}")
         startTicking()
     }
 
@@ -144,14 +143,14 @@ class TimerViewModel : ViewModel() {
                 currentPhase = TimerPhase.WORK,
                 remainingSeconds = current.workSeconds,
             )
-            _soundEvents.tryEmit(SoundEvent.PHASE_WORK)
+            speak("Starting work. Set ${current.currentSet} of ${current.sets}")
         } else if (current.currentSet > 1) {
             _state.value = current.copy(
                 currentSet = current.currentSet - 1,
                 currentPhase = TimerPhase.WORK,
                 remainingSeconds = current.workSeconds,
             )
-            _soundEvents.tryEmit(SoundEvent.PHASE_WORK)
+            speak("Starting work. Set ${current.currentSet - 1} of ${current.sets}")
         } else {
             _state.value = current.copy(remainingSeconds = current.workSeconds)
         }
@@ -169,9 +168,16 @@ class TimerViewModel : ViewModel() {
                 if (current.remainingSeconds > 1) {
                     val newRemaining = current.remainingSeconds - 1
                     _state.value = current.copy(remainingSeconds = newRemaining)
-                    // Countdown beeps for last 3 seconds
-                    if (newRemaining in 1..3) {
-                        _soundEvents.tryEmit(SoundEvent.COUNTDOWN_TICK)
+
+                    val phaseName = if (current.currentPhase == TimerPhase.WORK) "work" else "rest"
+                    val limit = countdownFrom.coerceAtMost(current.let {
+                        if (it.currentPhase == TimerPhase.WORK) it.workSeconds else it.restSeconds
+                    } - 1)
+
+                    if (newRemaining == limit) {
+                        speak("Finishing $phaseName in $newRemaining")
+                    } else if (newRemaining in 1 until limit) {
+                        speak("$newRemaining")
                     }
                 } else {
                     advancePhase()
@@ -191,19 +197,19 @@ class TimerViewModel : ViewModel() {
                         isFinished = true,
                         remainingSeconds = 0,
                     )
-                    _soundEvents.tryEmit(SoundEvent.WORKOUT_COMPLETE)
+                    speak("Workout complete!")
                 } else if (current.currentSet >= current.sets) {
                     _state.value = current.copy(
                         currentPhase = TimerPhase.REST,
                         remainingSeconds = current.restSeconds,
                     )
-                    _soundEvents.tryEmit(SoundEvent.PHASE_REST)
+                    speak("Starting rest")
                 } else {
                     _state.value = current.copy(
                         currentPhase = TimerPhase.REST,
                         remainingSeconds = current.restSeconds,
                     )
-                    _soundEvents.tryEmit(SoundEvent.PHASE_REST)
+                    speak("Starting rest")
                 }
             }
             TimerPhase.REST -> {
@@ -213,17 +219,22 @@ class TimerViewModel : ViewModel() {
                         isFinished = true,
                         remainingSeconds = 0,
                     )
-                    _soundEvents.tryEmit(SoundEvent.WORKOUT_COMPLETE)
+                    speak("Workout complete!")
                 } else {
+                    val nextSet = current.currentSet + 1
                     _state.value = current.copy(
-                        currentSet = current.currentSet + 1,
+                        currentSet = nextSet,
                         currentPhase = TimerPhase.WORK,
                         remainingSeconds = current.workSeconds,
                     )
-                    _soundEvents.tryEmit(SoundEvent.PHASE_WORK)
+                    speak("Starting work. Set $nextSet of ${current.sets}")
                 }
             }
         }
+    }
+
+    private fun speak(text: String) {
+        _speechEvents.tryEmit(SpeechEvent.Speak(text))
     }
 
     override fun onCleared() {

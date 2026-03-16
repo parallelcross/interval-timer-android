@@ -1,7 +1,6 @@
 package com.intervaltimer.app.ui.screens
 
-import android.media.AudioManager
-import android.media.ToneGenerator
+import android.speech.tts.TextToSpeech
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
@@ -30,7 +29,9 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -38,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -46,10 +48,10 @@ import com.intervaltimer.app.ui.theme.RestBlue
 import com.intervaltimer.app.ui.theme.RestBlueDark
 import com.intervaltimer.app.ui.theme.WorkGreen
 import com.intervaltimer.app.ui.theme.WorkGreenDark
-import com.intervaltimer.app.viewmodel.SoundEvent
+import com.intervaltimer.app.viewmodel.SpeechEvent
 import com.intervaltimer.app.viewmodel.TimerPhase
 import com.intervaltimer.app.viewmodel.TimerViewModel
-import kotlinx.coroutines.delay
+import java.util.Locale
 
 @Composable
 fun ActiveTimerScreen(
@@ -58,35 +60,31 @@ fun ActiveTimerScreen(
 ) {
     val state by viewModel.state.collectAsState()
 
-    // Sound playback via ToneGenerator on STREAM_MUSIC so it mixes with audio
-    val toneGenerator = remember {
-        ToneGenerator(AudioManager.STREAM_MUSIC, 100)
+    // Text-to-speech for voice announcements
+    val context = LocalContext.current
+    var ttsReady by remember { mutableStateOf(false) }
+    val tts = remember {
+        var instance: TextToSpeech? = null
+        instance = TextToSpeech(context) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                instance?.language = Locale.US
+                ttsReady = true
+            }
+        }
+        instance
     }
     DisposableEffect(Unit) {
-        onDispose { toneGenerator.release() }
+        onDispose {
+            tts.stop()
+            tts.shutdown()
+        }
     }
-    LaunchedEffect(Unit) {
-        viewModel.soundEvents.collect { event ->
+    LaunchedEffect(ttsReady) {
+        if (!ttsReady) return@LaunchedEffect
+        viewModel.speechEvents.collect { event ->
             when (event) {
-                SoundEvent.COUNTDOWN_TICK -> {
-                    toneGenerator.startTone(ToneGenerator.TONE_PROP_BEEP, 150)
-                }
-                SoundEvent.PHASE_WORK -> {
-                    // Double beep for work
-                    toneGenerator.startTone(ToneGenerator.TONE_PROP_BEEP2, 200)
-                    delay(250)
-                    toneGenerator.startTone(ToneGenerator.TONE_PROP_BEEP2, 200)
-                }
-                SoundEvent.PHASE_REST -> {
-                    // Single lower tone for rest
-                    toneGenerator.startTone(ToneGenerator.TONE_SUP_ERROR, 400)
-                }
-                SoundEvent.WORKOUT_COMPLETE -> {
-                    // Triple beep for completion
-                    repeat(3) {
-                        toneGenerator.startTone(ToneGenerator.TONE_PROP_ACK, 200)
-                        delay(300)
-                    }
+                is SpeechEvent.Speak -> {
+                    tts.speak(event.text, TextToSpeech.QUEUE_ADD, null, event.text.hashCode().toString())
                 }
             }
         }
