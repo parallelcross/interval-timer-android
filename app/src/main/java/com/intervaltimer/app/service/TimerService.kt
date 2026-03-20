@@ -114,8 +114,11 @@ class TimerService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
-        val phaseName = if (state.currentPhase == TimerPhase.WORK) "WORK" else "REST"
-        val title = "$phaseName ${state.currentSet}/${state.sets}"
+        val title = when (state.currentPhase) {
+            TimerPhase.WARMUP -> "GET READY"
+            TimerPhase.WORK -> "WORK ${state.currentSet}/${state.sets}"
+            TimerPhase.REST -> "REST ${state.currentSet}/${state.sets}"
+        }
         val text = "${formatTime(state.remainingSeconds)} remaining"
 
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)

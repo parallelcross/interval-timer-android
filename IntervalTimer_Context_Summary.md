@@ -38,7 +38,7 @@ app/src/main/java/com/intervaltimer/app/
 ```
 
 ## Screens
-1. **Setup Screen** - Dark themed config with +/- controls for sets (1-99), work time (5s-60min), rest time (5s-60min). Skip last rest toggle. Settings gear icon. Start button shows total duration.
+1. **Setup Screen** - Dark themed config with +/- controls for sets (1-99), work time (5s-60min), rest time (5s-60min). Skip last rest toggle. 1-minute warmup toggle. Settings gear icon. Start button shows total duration.
 2. **Active Timer Screen** - Full-screen color-coded display. Green for work, blue for rest. Current set, phase, large countdown, total remaining. Pause/resume, skip forward/back. Spoken announcements with audio focus ducking. Starts foreground service.
 3. **Completion Screen** - "Workout Complete!" with animated confetti. Done button returns to setup.
 4. **Settings Screen** - Voice countdown slider (off to 20s, persisted via DataStore). Open source library list.
@@ -47,7 +47,9 @@ app/src/main/java/com/intervaltimer/app/
 - **Foreground service** — TimerService keeps timer running when screen is off, holds PARTIAL_WAKE_LOCK (1hr max)
 - **Notification controls** — Prev, Pause/Resume, Next, Stop actions in notification. Tapping notification opens app.
 - **TimerManager singleton** — Timer logic lives in a process-level singleton, shared between service and ViewModel
+- **Warmup countdown** — Optional 1-minute warmup phase before first work set, orange background, "GET READY" label
 - **Voice announcements** — TTS speaks "Starting work, Set X of Y", "Starting rest", countdown from configurable seconds (default 3), "Workout complete"
+- **Progress cues** — For work intervals > 60s, speaks "25% done", "Halfway there", "75% done"
 - **Audio focus ducking** — AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK, debounced 1.5s release between countdown numbers
 - **TTS volume at 50%** — KEY_PARAM_VOLUME 0.5f so announcements don't overpower music
 - **SpeechEvent flow** — TimerManager emits sealed class SpeechEvent via SharedFlow, UI layer plays via TTS
@@ -56,7 +58,7 @@ app/src/main/java/com/intervaltimer/app/
 - **Launcher icon** — PNG ic_launcher in all density buckets, designed externally
 - **Edge-to-edge** — navigationBarsPadding() on all screens
 
-## What was done last (2026-03-19)
+## What was done last (2026-03-20)
 - Changed default countdown to 3 seconds
 - Added settings screen with configurable countdown (off to 20s) via DataStore, OSS library list
 - Added completion screen with confetti animation
@@ -65,3 +67,5 @@ app/src/main/java/com/intervaltimer/app/
 - Partial wake lock to prevent device sleep during workouts
 - Notification permission request on Android 13+
 - Fixed Float/Double type mismatches in confetti animation
+- Added optional 1-minute warmup countdown before first work set (WARMUP phase, orange UI)
+- Added progress cues at 25%, 50%, 75% for work intervals longer than 60 seconds

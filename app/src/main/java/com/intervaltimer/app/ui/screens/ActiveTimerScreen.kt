@@ -54,6 +54,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.intervaltimer.app.ui.theme.RestBlue
 import com.intervaltimer.app.ui.theme.RestBlueDark
+import com.intervaltimer.app.ui.theme.WarmupOrange
+import com.intervaltimer.app.ui.theme.WarmupOrangeDark
 import com.intervaltimer.app.ui.theme.WorkGreen
 import com.intervaltimer.app.ui.theme.WorkGreenDark
 import com.intervaltimer.app.service.TimerService
@@ -170,14 +172,21 @@ fun ActiveTimerScreen(
         }
     }
 
-    val isWork = state.currentPhase == TimerPhase.WORK
     val backgroundColor by animateColorAsState(
-        targetValue = if (isWork) WorkGreen else RestBlue,
+        targetValue = when (state.currentPhase) {
+            TimerPhase.WARMUP -> WarmupOrange
+            TimerPhase.WORK -> WorkGreen
+            TimerPhase.REST -> RestBlue
+        },
         animationSpec = tween(400),
         label = "bg",
     )
     val backgroundColorDark by animateColorAsState(
-        targetValue = if (isWork) WorkGreenDark else RestBlueDark,
+        targetValue = when (state.currentPhase) {
+            TimerPhase.WARMUP -> WarmupOrangeDark
+            TimerPhase.WORK -> WorkGreenDark
+            TimerPhase.REST -> RestBlueDark
+        },
         animationSpec = tween(400),
         label = "bgDark",
     )
@@ -243,7 +252,11 @@ fun ActiveTimerScreen(
 
             // Phase label
             Text(
-                text = "${if (isWork) "WORK" else "REST"} ${state.currentSet}/${state.sets}",
+                text = when (state.currentPhase) {
+                    TimerPhase.WARMUP -> "GET READY"
+                    TimerPhase.WORK -> "WORK ${state.currentSet}/${state.sets}"
+                    TimerPhase.REST -> "REST ${state.currentSet}/${state.sets}"
+                },
                 color = Color.White,
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,

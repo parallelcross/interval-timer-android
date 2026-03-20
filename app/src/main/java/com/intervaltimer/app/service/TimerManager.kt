@@ -52,16 +52,33 @@ object TimerManager {
         _state.value = _state.value.copy(skipLastRest = !_state.value.skipLastRest)
     }
 
+    fun toggleWarmup() {
+        _state.value = _state.value.copy(warmupEnabled = !_state.value.warmupEnabled)
+    }
+
     fun startWorkout() {
-        _state.value = _state.value.copy(
-            isRunning = true,
-            isPaused = false,
-            currentSet = 1,
-            currentPhase = TimerPhase.WORK,
-            remainingSeconds = _state.value.workSeconds,
-            isFinished = false,
-        )
-        speak("Starting work. Set 1 of ${_state.value.sets}")
+        val current = _state.value
+        if (current.warmupEnabled) {
+            _state.value = current.copy(
+                isRunning = true,
+                isPaused = false,
+                currentSet = 0,
+                currentPhase = TimerPhase.WARMUP,
+                remainingSeconds = 60,
+                isFinished = false,
+            )
+            speak("Get ready. Starting in 1 minute.")
+        } else {
+            _state.value = current.copy(
+                isRunning = true,
+                isPaused = false,
+                currentSet = 1,
+                currentPhase = TimerPhase.WORK,
+                remainingSeconds = current.workSeconds,
+                isFinished = false,
+            )
+            speak("Starting work. Set 1 of ${current.sets}")
+        }
         startTicking()
     }
 
@@ -127,11 +144,31 @@ object TimerManager {
                     val newRemaining = current.remainingSeconds - 1
                     _state.value = current.copy(remainingSeconds = newRemaining)
 
+                    // Progress cues at 25%, 50%, 75% for work intervals > 60s
+                    if (current.currentPhase == TimerPhase.WORK && current.workSeconds > 60) {
+                        val elapsed = current.workSeconds - newRemaining
+                        val quarter = current.workSeconds / 4
+                        if (quarter > 0) {
+                            when (elapsed) {
+                                quarter -> speak("25% done")
+                                quarter * 2 -> speak("Halfway there")
+                                quarter * 3 -> speak("75% done")
+                            }
+                        }
+                    }
+
                     if (countdownFrom > 0) {
-                        val phaseName = if (current.currentPhase == TimerPhase.WORK) "work" else "rest"
-                        val limit = countdownFrom.coerceAtMost(
-                            (if (current.currentPhase == TimerPhase.WORK) current.workSeconds else current.restSeconds) - 1
-                        )
+                        val phaseName = when (current.currentPhase) {
+                            TimerPhase.WARMUP -> "warmup"
+                            TimerPhase.WORK -> "work"
+                            TimerPhase.REST -> "rest"
+                        }
+                        val phaseTotal = when (current.currentPhase) {
+                            TimerPhase.WARMUP -> 60
+                            TimerPhase.WORK -> current.workSeconds
+                            TimerPhase.REST -> current.restSeconds
+                        }
+                        val limit = countdownFrom.coerceAtMost(phaseTotal - 1)
 
                         if (newRemaining == limit) {
                             speak("Finishing $phaseName in $newRemaining")
@@ -150,6 +187,14 @@ object TimerManager {
     private fun advancePhase() {
         val current = _state.value
         when (current.currentPhase) {
+            TimerPhase.WARMUP -> {
+                _state.value = current.copy(
+                    currentSet = 1,
+                    currentPhase = TimerPhase.WORK,
+                    remainingSeconds = current.workSeconds,
+                )
+                speak("Starting work. Set 1 of ${current.sets}")
+            }
             TimerPhase.WORK -> {
                 if (current.currentSet >= current.sets && current.skipLastRest) {
                     _state.value = current.copy(

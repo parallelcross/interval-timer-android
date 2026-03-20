@@ -146,6 +146,36 @@ fun SetupScreen(
             }
         }
 
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // 1-minute warmup toggle
+        Card(
+            colors = CardDefaults.cardColors(containerColor = CardSurface),
+            shape = RoundedCornerShape(16.dp),
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "1-minute warmup countdown",
+                    color = Color.White,
+                    fontSize = 16.sp,
+                )
+                Switch(
+                    checked = state.warmupEnabled,
+                    onCheckedChange = { viewModel.toggleWarmup() },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Color.White,
+                        checkedTrackColor = AccentGreen,
+                    ),
+                )
+            }
+        }
+
         Spacer(modifier = Modifier.weight(1f))
         Spacer(modifier = Modifier.height(24.dp))
 

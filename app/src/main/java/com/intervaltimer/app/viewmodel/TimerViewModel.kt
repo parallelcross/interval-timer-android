@@ -5,7 +5,7 @@ import com.intervaltimer.app.service.TimerManager
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 
-enum class TimerPhase { WORK, REST }
+enum class TimerPhase { WARMUP, WORK, REST }
 
 sealed class SpeechEvent {
     data class Speak(val text: String) : SpeechEvent()
@@ -16,6 +16,7 @@ data class TimerState(
     val workSeconds: Int = 20,
     val restSeconds: Int = 10,
     val skipLastRest: Boolean = true,
+    val warmupEnabled: Boolean = false,
     val isRunning: Boolean = false,
     val isPaused: Boolean = false,
     val currentSet: Int = 1,
@@ -25,29 +26,39 @@ data class TimerState(
 ) {
     val totalWorkoutSeconds: Int
         get() {
+            val warmup = if (warmupEnabled) 60 else 0
             val workTotal = sets * workSeconds
             val restSets = if (skipLastRest) (sets - 1) else sets
             val restTotal = restSets.coerceAtLeast(0) * restSeconds
-            return workTotal + restTotal
+            return warmup + workTotal + restTotal
         }
 
     val totalRemainingSeconds: Int
         get() {
             if (isFinished) return 0
             var total = remainingSeconds
-            val isWork = currentPhase == TimerPhase.WORK
-            val remainingSets = sets - currentSet
-            if (isWork) {
-                if (!(skipLastRest && currentSet == sets)) {
-                    total += restSeconds
+            when (currentPhase) {
+                TimerPhase.WARMUP -> {
+                    // Add all work + rest after warmup
+                    total += sets * workSeconds
+                    val restSets = if (skipLastRest) (sets - 1) else sets
+                    total += restSets.coerceAtLeast(0) * restSeconds
                 }
-                total += remainingSets * workSeconds
-                val remainingRestSets = if (skipLastRest) (remainingSets - 1).coerceAtLeast(0) else remainingSets
-                total += remainingRestSets * restSeconds
-            } else {
-                total += remainingSets * workSeconds
-                val remainingRestSets = if (skipLastRest) (remainingSets - 1).coerceAtLeast(0) else remainingSets
-                total += remainingRestSets * restSeconds
+                TimerPhase.WORK -> {
+                    val remainingSets = sets - currentSet
+                    if (!(skipLastRest && currentSet == sets)) {
+                        total += restSeconds
+                    }
+                    total += remainingSets * workSeconds
+                    val remainingRestSets = if (skipLastRest) (remainingSets - 1).coerceAtLeast(0) else remainingSets
+                    total += remainingRestSets * restSeconds
+                }
+                TimerPhase.REST -> {
+                    val remainingSets = sets - currentSet
+                    total += remainingSets * workSeconds
+                    val remainingRestSets = if (skipLastRest) (remainingSets - 1).coerceAtLeast(0) else remainingSets
+                    total += remainingRestSets * restSeconds
+                }
             }
             return total
         }
@@ -62,6 +73,7 @@ class TimerViewModel : ViewModel() {
     fun updateWorkSeconds(delta: Int) = TimerManager.updateWorkSeconds(delta)
     fun updateRestSeconds(delta: Int) = TimerManager.updateRestSeconds(delta)
     fun toggleSkipLastRest() = TimerManager.toggleSkipLastRest()
+    fun toggleWarmup() = TimerManager.toggleWarmup()
     fun startWorkout() = TimerManager.startWorkout()
     fun togglePause() = TimerManager.togglePause()
     fun stopWorkout() = TimerManager.stopWorkout()
