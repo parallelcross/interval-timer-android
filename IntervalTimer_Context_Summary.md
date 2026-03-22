@@ -48,7 +48,7 @@ app/src/main/java/com/intervaltimer/app/
 - **Notification controls** — Prev, Pause/Resume, Next, Stop actions in notification. Tapping notification opens app.
 - **TimerManager singleton** — Timer logic lives in a process-level singleton, shared between service and ViewModel
 - **Warmup countdown** — Optional 1-minute warmup phase before first work set, orange background, "GET READY" label
-- **Voice announcements** — TTS speaks "Starting work, Set X of Y", "Starting rest", countdown from configurable seconds (default 3), "Workout complete"
+- **Voice announcements** — TTS speaks "Starting work, Set X of Y", "Starting rest", countdown from configurable seconds (default 3), "Workout complete". Uses QUEUE_FLUSH to cancel any in-progress speech before starting new announcements.
 - **Progress cues** — For work intervals > 60s, speaks "25% done", "Halfway there", "75% done"
 - **Audio focus ducking** — AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK, debounced 1.5s release between countdown numbers
 - **TTS volume at 50%** — KEY_PARAM_VOLUME 0.5f so announcements don't overpower music
@@ -69,3 +69,6 @@ app/src/main/java/com/intervaltimer/app/
 - Fixed Float/Double type mismatches in confetti animation
 - Added optional 1-minute warmup countdown before first work set (WARMUP phase, orange UI)
 - Added progress cues at 25%, 50%, 75% for work intervals longer than 60 seconds
+
+## What was done last (2026-03-22)
+- Changed TTS queue mode from QUEUE_ADD to QUEUE_FLUSH so new voice announcements cancel any in-progress speech instead of queuing behind it

@@ -153,7 +153,7 @@ fun ActiveTimerScreen(
                     val params = Bundle().apply {
                         putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, 0.5f)
                     }
-                    tts.speak(event.text, TextToSpeech.QUEUE_ADD, params, event.text.hashCode().toString())
+                    tts.speak(event.text, TextToSpeech.QUEUE_FLUSH, params, event.text.hashCode().toString())
                 }
             }
         }
