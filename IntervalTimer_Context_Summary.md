@@ -9,7 +9,7 @@ An Android interval timer app for workouts with spoken voice coaching. The user 
 - **Build:** AGP 9.0.1, Gradle 9.3.1
 - **Architecture:** Single-Activity, ViewModel delegates to singleton TimerManager, Navigation Compose
 - **Audio:** Android TextToSpeech + AudioFocusRequest (AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK), TTS volume at 50%
-- **Persistence:** DataStore Preferences (countdown setting)
+- **Persistence:** DataStore Preferences (countdown setting, last-used setup config)
 - **Min SDK:** 26 | **Target SDK:** 36
 - **Package:** `com.intervaltimer.app`
 
@@ -18,7 +18,7 @@ An Android interval timer app for workouts with spoken voice coaching. The user 
 app/src/main/java/com/intervaltimer/app/
 ├── MainActivity.kt              # Single activity, edge-to-edge, splash theme, notification permission
 ├── data/
-│   └── SettingsRepository.kt    # DataStore preferences for countdown seconds
+│   └── SettingsRepository.kt    # DataStore preferences for countdown + setup config
 ├── navigation/
 │   └── AppNavGraph.kt           # setup -> active -> completion, settings routes
 ├── service/
@@ -72,3 +72,9 @@ app/src/main/java/com/intervaltimer/app/
 
 ## What was done last (2026-03-22)
 - Changed TTS queue mode from QUEUE_ADD to QUEUE_FLUSH so new voice announcements cancel any in-progress speech instead of queuing behind it
+
+## What was done last (2026-03-25)
+- Persist last-used interval setup (sets, work/rest durations, skip last rest, warmup) via DataStore
+- SetupPreferences data class + SettingsRepository saveSetup/setupPreferences flow
+- TimerManager.loadSetup() initializes state from saved prefs on startup
+- AppNavGraph auto-saves setup changes via distinctUntilChanged flow collector

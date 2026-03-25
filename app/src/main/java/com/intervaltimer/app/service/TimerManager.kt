@@ -30,6 +30,16 @@ object TimerManager {
 
     var countdownFrom = 3
 
+    fun loadSetup(sets: Int, workSeconds: Int, restSeconds: Int, skipLastRest: Boolean, warmupEnabled: Boolean) {
+        _state.value = TimerState(
+            sets = sets,
+            workSeconds = workSeconds,
+            restSeconds = restSeconds,
+            skipLastRest = skipLastRest,
+            warmupEnabled = warmupEnabled,
+        )
+    }
+
     fun updateSets(delta: Int) {
         _state.value = _state.value.let {
             it.copy(sets = (it.sets + delta).coerceIn(1, 99))
